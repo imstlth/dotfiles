@@ -1,0 +1,34 @@
+[global_config]
+  geometry_hinting = True
+  window_state = ""
+  tab_position = left
+  title_at_bottom = True
+  title_transmit_bg_color = "#0FEBF5"
+  title_receive_bg_color = "#860FF6"
+  title_inactive_fg_color = "#ffffff"
+  title_inactive_bg_color = "#16161E"
+  inactive_color_offset = 1.0
+  title_font = MesloLGS NF 11
+[keybindings]
+[profiles]
+  [[default]]
+    background_darkness = 0.9
+    background_type = transparent
+    cursor_shape = ibeam
+    cursor_color = "#1563e7"
+    cursor_color_fg = False
+    font = MesloLGS NF Bold 12
+    scrollback_lines = 1000
+    palette = "#000000:#cd0000:#00cd00:#cdcd00:#0000cd:#cd00cd:#00cdcd:#faebd7:#404040:#ff0000:#00ff00:#ffff00:#0000ff:#ff00ff:#00ffff:#ffffff"
+    use_system_font = False
+    use_theme_colors = True
+[layouts]
+  [[default]]
+    [[[window0]]]
+      type = Window
+      parent = ""
+    [[[child1]]]
+      type = Terminal
+      parent = window0
+      profile = default
+[plugins]
