@@ -17,6 +17,7 @@ set so=3
 
 set hidden
 set nohlsearch
+set incsearch
 
 set lazyredraw
 set noerrorbells
@@ -42,12 +43,17 @@ set backspace=eol,start,indent
 set whichwrap+=<,>,h,l
 set laststatus=2
 set ignorecase
+set mouse=a
 
 " map <leader>r :CocCommand workspace.renameCurrentFile<CR>
 map <leader>vj :split<CR><C-W>j
 map <leader>vk :split<CR>
 map <leader>vl :vsplit<CR><C-W>l
 map <leader>vh :vsplit<CR>
+" map <leader><S-J> <C-W>j
+" map <leader><S-K> <C-W>k
+" map <leader><S-L> <C-W>l
+" map <leader><S-H> <C-W>h
 map <leader>l :bnext<CR>
 map <leader>h :bprevious<CR>
 map <leader>dd :bdelete<CR>
