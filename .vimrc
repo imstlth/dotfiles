@@ -1,7 +1,5 @@
 let mapleader = ","
 
-set termguicolors
-
 filetype on
 syntax enable
 filetype plugin on
@@ -35,6 +33,7 @@ set noswapfile
 " let &t_8f = "\<Esc>[38;2;%lu;%lu;%lum"
 " let &t_8b = "\<Esc>[48:2;%lu;%lu;%lum"
 
+set expandtab
 set smarttab
 set ai
 set si
@@ -62,10 +61,11 @@ map <leader>S :FZF --reverse --info=inline /<CR>
 map <leader>f :Files<CR>
 map <leader>b :Buffers<CR>
 map <leader>c :Colors<CR>
-map! ;; <Esc>
+map! ,, <Esc>
+cmap w!! w !sudo tee > /dev/null %
 
-nmap oo o<Esc>k
-nmap OO O<Esc>j
+" nmap oo o<Esc>k
+" nmap OO O<Esc>j
 
 let g:fzf_action = {
 	\ 'ctrl-n': 'tab split',
@@ -80,6 +80,7 @@ Plug 'vim-airline/vim-airline-themes'
 Plug 'neoclide/coc.nvim', {'branch': 'release'}
 Plug 'ghifarit53/tokyonight-vim'
 Plug 'jiangmiao/auto-pairs'
+Plug 'elkowar/yuck.vim'
 call plug#end()
 
 let g:airline_powerline_fonts=1
