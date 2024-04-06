@@ -73,7 +73,7 @@ ENABLE_CORRECTION="true"
 export FZF_DEFAULT_COMMAND="rg --hidden --ignore-case --files"
 alias f='vim $(fzf --reverse --multi --cycle --scroll-off 2 --border none --prompt " " --pointer "" --marker "" --preview "bat --pager never --color always --style auto {}" --height 50%)'
 
-# Je kiff trop cette app
+# Je kiff trop cette app 
 # s-tui
 # c'est vrm une dinguerie
 alias grep="grep --color=auto"

@@ -1,0 +1,16 @@
+"$schema" = 'https://starship.rs/config-schema.json'
+
+add_newline = false
+
+format = "$directory$python$rust$cmd_duration$status$character"
+
+[directory]
+truncation_symbol = "…/"
+truncation_length = 6
+truncate_to_repo = false
+
+[status]
+format = "[$symbol => $status]($style)"
+map_symbol = true
+pipestatus = true
+disabled = false
