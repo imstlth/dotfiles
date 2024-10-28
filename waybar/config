@@ -1,0 +1,98 @@
+{
+  "layer": "top",
+  "modules-left": ["network", "custom/cpu", "custom/temp", "memory", "disk"],
+  "modules-center": ["hyprland/workspaces"],
+  "modules-right": ["clock", "pulseaudio", "backlight", "battery", "tray"],
+
+    "disk": {
+        "interval": 60,
+        "path": "/",
+        "tooltip": true,
+        "on-click": "baobab",
+        "format": "󰣇  {percentage_used}%",
+        "on-click-right": "gparted"
+    },
+
+  "pulseaudio": {
+    "scroll-step": 1,
+    "format": "{icon} {volume}%",
+    "format-muted": "{icon} {volume}%",
+    "on-click": "pavucontrol",
+        "on-click-right": "qpwgraph",
+    "format-icons": {
+      "default": [" ", " ", " "]
+    }
+  },
+
+  "network": {
+    "format-wifi": "{icon}   {essid}",
+    "format-ethernet": "󰈀   {ifname} - {bandwithTotalOctets}",
+        "format-disconnected": "󰤮   Disconnected",
+        "on-click": "alacritty -e iwctl",
+        "tooltip-format-wifi": "INTERFACE: {ifname}  IP: {ipaddr}",
+        "tooltip-format-ethernet": "IP: {ipaddr}  GATEWAY: {gwaddr}",
+        "tooltip-format-disconnected": "INTERFACE: {ifname}",
+        "format-icons": ["󰤯", "󰤟", "󰤢", "󰤢", "󰤨"]
+  },
+
+  "backlight": {
+    "tooltip": false,
+    "format": " {}%",
+    "interval":1,
+        "on-click": "loginctl lock-session"
+  },
+
+    "battery": {
+        "states": {
+            "good": 95,
+            "warning": 30,
+            "critical": 15
+        },
+        "format": "{icon}   {capacity}%",
+        "format-charging": "   {capacity}%",
+        "format-plugged": "   {capacity}%",
+        "format-alt": "{time} {icon} ",
+        "format-icons": ["", "", "", "", ""]
+    },
+
+    "clock": {
+        "interval": 60,
+        "format": "  {:%H:%M}",
+        "format-alt": "󰃭  {:%d/%m/%Y}"
+    },
+
+    "custom/cpu": {
+        "exec": "echo $[100-$(vmstat 1 2 | tail -1 | awk '{print $15}')]% \\| $(nvidia-smi --query-gpu=utilization.gpu --format=csv | awk '/[0-9]/ {print $1}')%",
+        "interval": 1,
+        "format": "  {}  󰻇 ",
+        "on-click": "alacritty -e s-tui",
+        "tooltip": false
+    },
+
+    "custom/temp": {
+        "exec": "/home/caracole/Code/cpu_temp",
+        "interval": 3,
+        "format": "  {}",
+        "tooltip": false
+    },
+
+    "memory": {
+        "interval": 30,
+        "format": "  {percentage}%",
+        "on-click": "alacritty -e 'btm'"
+    },
+
+    "custom/media": {
+        "interval": 30,
+        "format": "{icon} {}",
+        "return-type": "json",
+        "max-length": 20,
+        "format-icons": {
+            "spotify": " ",
+            "default": " "
+        },
+        "escape": true,
+        "exec": "$HOME/.config/system_scripts/mediaplayer.py 2> /dev/null",
+        "on-click": "playerctl play-pause"
+    }
+}
