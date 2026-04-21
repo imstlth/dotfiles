@@ -1,0 +1,19 @@
+[syntax]
+keyword = c
+name = g
+comment = b
+string = y
+error = r
+number = M
+operator = y
+punctuation = w
+token = C
+paren = R
+
+[interface]
+background = d
+output = w
+main = c
+prompt = m
+prompt_more = c
+right_arrow_suggestion = b

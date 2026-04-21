@@ -1,0 +1,124 @@
+* {
+    border: none;
+    border-radius: 10px;
+    font-family: "SauceCodePro" ;
+    font-size: 15px;
+    min-height: 9px;
+}
+
+@define-color menu #bb9af7;
+@define-color network #bb9af7;
+@define-color cpu #bb9af7;
+@define-color temp #bb9af7;
+@define-color memory #bb9af7;
+@define-color disk #bb9af7;
+@define-color workspaces #bb9af7;
+@define-color clock #bb9af7;
+@define-color stop #bb9af7;
+@define-color pulseaudio #bb9af7;
+@define-color backlight #bb9af7;
+@define-color battery #bb9af7;
+
+window#waybar.hidden {
+    opacity: 0.2;
+}
+
+#window, #custom-menu, #network, #custom-cpu, #custom-temp, #memory, #disk, #workspaces button, #clock, #custom-stop, #pulseaudio, #backlight, #battery, #tray {
+    margin-top: 6px;
+    padding-left: 10px;
+    padding-right: 10px;
+    margin-left: 8px;
+    margin-bottom: 0px;
+    transition: none;
+}
+
+#window {
+    color: transparent;
+}
+
+#custom-menu {
+    padding-right: 5px;
+    color: @menu;
+}
+
+#network {
+    color: @network;
+}
+
+#custom-cpu {
+    color: @cpu;
+}
+
+#custom-temp {
+    color: @temp;
+}
+
+#memory {
+    color: @memory;
+}
+
+#disk {
+    color: @disk;
+}
+
+#workspaces button {
+    font-size: 16px;
+    color: @workspaces;
+}
+
+#workspaces button.active {
+    background-color: @workspaces;
+}
+
+#workspaces button.urgent {
+    color: #bb9af7;
+    animation-name: blink;
+    animation-duration: 0.5s;
+    animation-timing-function: linear;
+    animation-iteration-count: infinite;
+    animation-direction: alternate;
+}
+
+#clock {
+    color: @clock;
+}
+
+#custom-stop {
+    color: @stop;
+}
+
+#pulseaudio {
+    color: @pulseaudio;
+}
+
+#backlight {
+    color: @backlight;
+}
+
+#battery {
+    color: @battery;
+}
+
+#battery.charging, #battery.plugged {
+    color: @battery;
+}
+
+#battery.critical:not(.charging) {
+    color: #1a1b26;
+    animation-name: blink;
+    animation-duration: 0.5s;
+    animation-timing-function: linear;
+    animation-iteration-count: infinite;
+    animation-direction: alternate;
+}
+
+@keyframes blink {
+    to {
+        color: #b5e8e0;
+    }
+}
+
+#tray {
+    margin-right: 8px;
+    color: #b5e8e0;
+}

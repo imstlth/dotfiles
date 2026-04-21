@@ -1,0 +1,146 @@
+* {
+  border: none;
+  border-radius: 10px;
+  font-family: "SauceCodePro" ;
+  font-size: 15px;
+  min-height: 9px;
+}
+
+window#waybar {
+  background: transparent;
+}
+
+window#waybar.hidden {
+  opacity: 0.2;
+}
+
+#custom-menu, #window, #workspaces button, #network, #pulseaudio, #disk, #battery, #backlight, #clock, #memory, #custom-cpu, #custom-temp, #tray, #custom-stop, #custom-power, #custom-media {
+  margin-top: 6px;
+  padding-left: 10px;
+  padding-right: 10px;
+  margin-left: 8px;
+  margin-bottom: 0px;
+  transition: none;
+}
+
+#custom-menu {
+    padding-right: 5px;
+    color: #bb9af7;
+    background-color: #1a1b26;
+}
+
+#window {
+  color: transparent;
+  background: transparent;
+}
+
+#workspaces button {
+  background-color: #1a1b26;
+  font-size: 16px;
+  color: #bb9af7;
+}
+
+#workspaces button.active {
+  background-color: #bb9af7;
+  color: #1a1b26;
+}
+
+#workspaces button.urgent {
+  background-color: #1a1b26;
+  color: #bb9af7;
+  animation-name: blink;
+  animation-duration: 0.5s;
+  animation-timing-function: linear;
+  animation-iteration-count: infinite;
+  animation-direction: alternate;
+}
+
+#network {
+  color: #1a1b26;
+  background: #bd93f9;
+}
+
+#pulseaudio {
+  color: #1a1b26;
+  background: #fae3b0;
+}
+
+#disk {
+  color: #1a1b26;
+  background: #b5e8e0;
+}
+
+#battery {
+  color: #1a1b26;
+  background: #b5e8e0;
+}
+
+#battery.charging, #battery.plugged {
+  color: #1a1b26;
+  background-color: #b5e8e0;
+}
+
+#battery.critical:not(.charging) {
+  background-color: #b5e8e0;
+  color: #1a1b26;
+  animation-name: blink;
+  animation-duration: 0.5s;
+  animation-timing-function: linear;
+  animation-iteration-count: infinite;
+  animation-direction: alternate;
+}
+
+@keyframes blink {
+  to {
+    background-color: #bf616a;
+    color: #b5e8e0;
+  }
+}
+
+#backlight {
+  color: #1a1b26;
+  background: #f8bd96;
+}
+#clock {
+  color: #1a1b26;
+  background: #abe9b3;
+}
+
+#memory {
+  color: #1a1b26;
+  background: #ddb6f2;
+}
+
+#custom-cpu {
+  color: #1a1b26;
+  background: #96cdfb;
+}
+
+#custom-temp {
+  color: #1a1b26;
+  background: #fae3b0;
+}
+
+#tray {
+  margin-right: 8px;
+  color: #b5e8e0;
+  background: #1a1b26;
+}
+
+#custom-stop {
+  color: #1a1b26;
+  background: #f7768e;
+}
+
+#custom-power {
+  font-size: 20px;
+  margin-right: 8px;
+  padding-right: 5px;
+  color: #1a1b26;
+  background: #f28fad;
+}
+
+#custom-media {
+  color: #1a1b26;
+  background: #f2cdcd;
+}

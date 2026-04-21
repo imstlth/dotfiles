@@ -1,0 +1,8 @@
+[Desktop Entry]
+Type=Application
+Name=Gamemode
+GenericName=Outil
+Comment=Active le gamemode qui réduit les animations (pas super utile)
+Exec=/home/caracole/.config/hypr/gamemode.sh
+Icon=input-gaming
+Terminal=false

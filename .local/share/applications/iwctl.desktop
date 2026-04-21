@@ -1,0 +1,7 @@
+[Desktop Entry]
+Type=Application
+Name=iwctl
+GenericName=Gestionnaire du wifi
+Exec=iwctl
+Icon=/usr/share/icons/Papirus/64x64/apps/knemo.svg
+Terminal=true

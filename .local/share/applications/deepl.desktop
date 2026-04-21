@@ -1,0 +1,7 @@
+[Desktop Entry]
+Type=Application
+Name=DeepL
+GenericName=DeepL Translator
+Exec=/home/caracole/Code/deepl.fish
+Icon=/usr/share/icons/Papirus/16x16/apps/lokalize.svg
+Terminal=false

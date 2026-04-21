@@ -1,0 +1,7 @@
+[Desktop Entry]
+Type=Application
+Name=Power control
+GenericName=Shutdown, reboot and sleep
+Exec=/home/caracole/Code/power_control.fish
+Icon=/usr/share/icons/Papirus/64x64/apps/preferences-system-power.svg
+Terminal=false

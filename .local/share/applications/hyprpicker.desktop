@@ -1,0 +1,7 @@
+[Desktop Entry]
+Type=Application
+Name=hyprpicker
+GenericName=Color picker
+Exec=/home/caracole/Code/picker.fish
+Icon=/usr/share/icons/Papirus/48x48/apps/gnome-color-chooser.svg
+Terminal=false

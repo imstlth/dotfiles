@@ -1,0 +1,7 @@
+[Desktop Entry]
+Type=Application
+Name=Prochain wallpaper
+GenericName=Changement de fond d'écran
+Exec=/home/caracole/Code/change_bg.fish
+Icon=/usr/share/icons/Papirus/64x64/apps/livewallpaper.svg
+Terminal=false

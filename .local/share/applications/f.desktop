@@ -1,0 +1,7 @@
+[Desktop Entry]
+Type=Application
+Name=f - recherche
+GenericName=fzf + nvim
+Exec=fish -c 'f'
+Icon=/usr/share/icons/Papirus/64x64/apps/plasma-search.svg
+Terminal=true

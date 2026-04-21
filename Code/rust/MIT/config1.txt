@@ -1,0 +1,10 @@
+Commande        = nnet -H Sigmoid -O Softmax -e 150 -S 150 -g -E -v /home/caracole/Code/rust/MIT/ 784,183,42,10
+Fn hidden layer = Sigmoid
+Fn output layer = Softmax
+Epochs          = 150
+Taille du batch = 150
+Config          = 784,183,42,10
+Temps           = 30 minutes
+Cout initial    = 0.6827013
+Cout final      = 0.0008478
+Images trouvées = 59943/60000

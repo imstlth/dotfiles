@@ -1,0 +1,33 @@
+.git/
+.electron-gyp/
+.nv/
+.config/tidal-hifi/Code\ Cache/
+.config/tidal-hifi/Cache/
+.config/tidal-hifi/Service\ Worker/
+.mandelbulber/thumbnails/
+.npm/
+.local/share/copyq/
+.local/share/gvfs-metadata/
+.config/qBittorrent/watched_folders.json
+.themes/
+go/
+.local/lib/python3.12/site-packages/
+.local/share/icons/Breeze_Dark_Default/cursors
+generated_completions/
+.local/state/nvim/
+.cache/nvim/
+.cargo/
+.local/share/gem/
+.rustup/
+.local/share/Steam/ubuntu12_64/
+.local/share/Steam/ubuntu12_32/
+.local/share/Steam/steamapps/common/SteamLinuxRuntime_sniper/
+.local/share/Steam/steamapps/common/SteamLinuxRuntime_soldier/
+.cache/yay/
+.steam/
+.nvm/
+.local/share/nvim/lazy/
+.cache/pip/
+.local/share/Steam/appcache/
+.librewolf/
+.mozilla/

@@ -1,0 +1,1000 @@
+print()
+print("Dès qu'il y a 2 perturbations, le mot est mal corrigé :")
+w = encoder(G3, m)
+w[0,0] += 1
+w[0,1] += 1
+w = np.mod(w, 2)
+print("mot erroné :", w)
+d = decoder(G3, H3, w)
+print("mot décodé :", d)"""
+#########################
+# F256 = F2[X]/(P) avec P un polynôme de F2[X] irréductible de degré 8
+# (P) = P F2[X]
+# En l'occurence, grâce à des gens intelligents sur Internet,
+# X^8 + X^7 + X^2 + X + 1
+# est irréductible sur F2[X].
+# Il a aussi une propriété ultra cool : notre F256* est alors engendré par X -> X est un élément primitif !
+# On représente les polynômes de F2[X] par des nombres binaires.
+# On s'aide en particulier de https://en.wikiversity.org/wiki/Reed%E2%80%93Solomon_codes_for_coders
+# PYTHON : un nombre binaire s'écrit sous la forme 0b00000000 (avec autant de 0 que l'on veut)
+# mais c'est totalement équivalent de l'écrire en décimal.
+# À partir de maintenant, on identifie un polynôme à son écriture binaire.
+# Par exemple
+"""a = 0b00000101
+print(a == 5)"""
+# renvoie True
+# On voit alors que les polynômes sont "ordonnés" parce que les nombres binaires sont ordonnés
+# Par exemple, pour un polynome P, si P >= 0b100000000 = 2**8
+# cela veut dire que son degré est supérieur ou égal à 8
+# Python permet d'effecteur des opérations bit par bit
+# & = AND
+# | = OR
+# ^ = XOR = + dans F2 (très important)
+# ~ = NOT
+# X^8 + X^7 + X^2 + X + 1
+P = 0b110000111
+def to_poly(bin_int):
+    "Renvoie un polynôme à partir de sa représentation binaire."
+    # Il faut faire un cas à part pour 0
+    if bin_int == 0:
+        return "0"
+    poly = ""
+    p = len(bin(bin_int)) - 3
+    for coeff in bin(bin_int)[2:]:
+        if p == 0:
+            poly += "1 + " * int(coeff)
+        else:
+            poly += f"X^{p} + " * int(coeff)
+        p -= 1
+    return poly[:-3]
+print("P =", to_poly(P))
+# Il y a beaucoup de commentaires mais le code tient en 10 lignes
+def div_P(poly):
+    "Calcule le reste de la div de poly (en binaire) par P"
+    if poly < 2**8:
+        return poly
+    # On effectue d'abord la div par X^8
+    quotient = poly >> 8  # Ça équivaut à se donner le quotient par X^8
+    reste = poly - (quotient * 2**8)
+    # Pour chaque puissance 8+n :
+    # X^8 X^n = (P - X^8) X^n (math)
+    # Ce qui revient à augmenter les puissances de P-X^8 de n (math)
+    # puis à l'ajouter au reste du polynôme.
+    # Puisque en python, + = - = ^,
+    # on "shift" P ^ 2**8 (py, ^ vu comme -) par n
+    # puis on ajoute (^) ça au reste
+    n = 0
+    for coeff in bin(quotient)[:1:-1]:
+        # Si coeff = 1, tout ce passe bien, si = 0, ^0 ne fait rien
+        reste ^= ((P ^ 2**8) << n) * int(coeff)
+        n += 1
+    # Comme rien n'empêche que les n soient très grands
+    # et donc que le reste ait toujours un degré ≥ 8.
+    return div_P(reste)
+# depart = time.time()
+# for i in range(100000):
+# arrivee = time.time()
+# print(arrivee - depart)
+# print("X^11 =", to_poly(div_P(2**11)))
+# print("X^10 =", to_poly(div_P(2**10)))
+class F256:
+    # Attention ! F256 prend en entrée un polynôme et non pas une puissance de X
+    def __init__(self, polynome):
+        self.poly = div_P(polynome)
+    
+    def __add__(self, other):
+        return F256(self.poly ^ other.poly)
+    
+    # Nous sommes en caractéristique 2 donc
+    def __sub__(self, other):
+        return F256(self.poly ^ other.poly)
+    
+    def __neg__(self):
+        return self
+    
+    def __int__(self):
+        return self.poly
+    
+    def __str__(self):
+        # Finalement, on affiche juste le polynôme et non pas la puissance de X
+        return str(self.poly)
+        # if self.poly == 0:
+        #     return "0"
+        # return str(table_exp[self.poly] + 1)
+        # ATTENTION ! Ce n'est qu'une représentation. Dans cette représentation, 2 * 2 = 3.
+        # On fait + 1 pour représenter 0 sous la forme 0 et 1 sous la forme 1 ALORS QUE 1 = X^0 et devrait donc être aussi représenté sous 0
+    
+    def __repr__(self):
+        return str(self.poly)
+    
+    def __eq__(self, other):
+        return self.poly == other.poly
+# D'un POV purement Python, on a besoin d'avoir défini F256 avant de definir create_table
+# Mais pour définir la méthode __mul__ de F256, on a besoin de create_table.
+# Il y a une solution : https://stackoverflow.com/questions/17929543/how-can-i-dynamically-create-class-methods-for-a-class-in-python
+def create_tables():
+    table_exp = {}
+    table_log = {}
+    for puissance in range(2**8 - 1):
+        # 2 représente X ici
+        table_exp[F256(2**puissance).poly] = puissance
+        table_log[puissance] = F256(2**puissance)
+    return table_exp, table_log
+# La table des puissances
+table_exp, table_log = create_tables()
+def mulF256(self, other):
+    try:
+        # nouvelle multiplication -> on additionne les puissances de X
+        # Il faut faire ce test avant car 0 n'est pas une puissance de X
+        if 0 in [self.poly, other.poly]:
+            return F256(0)
+        return table_log[(table_exp[self.poly] + table_exp[other.poly]) % 255]
+        # return F256(2**((table_exp[self.poly] + table_exp[other.poly]) % 255))  # car X^255 = 1
+        # ancienne multiplication -> on faisant la multiplication polynômiale
+    #        n = 0
+    #        new_poly = 0
+    #        for valeur in bin(other.poly)[:1:-1]:
+    #            new_poly ^= (self.poly << n) * int(valeur)
+    #            n += 1
+    #        return F256(new_poly)
+    except:
+        raise Exception("Il faut multiplier par un autre nombre de F256 !")
+def powF256(self, scalaire):
+    if scalaire == 0:
+        return F256(1)
+    elif self.poly == 0:
+        return self
+    else:
+        return table_log[(table_exp[self.poly] * scalaire) % 255]
+def truedivF256(self, other):
+    if other.poly == 0:
+        raise ZeroDivisionError()
+    elif self.poly == 0:
+        return self
+    else:
+        puis_self = table_exp[self.poly]
+        puis_other = table_exp[other.poly]
+        return table_log[(puis_self - puis_other) % 255]
+setattr(F256, "__mul__", mulF256)
+setattr(F256, "__pow__", powF256)
+setattr(F256, "__truediv__", truedivF256)
+depart = time.time()
+for i in range(1000):
+    a = table_log[200] * table_log[100]
+arrivee = time.time()
+# print(arrivee - depart)
+# 2 = X
+zero = F256(0)
+un = F256(1)
+X = F256(2**1)
+X2 = F256(2**2)
+X3 = F256(2**3)
+# print(zero)
+# print(un)
+# print(X)
+# print(X2)
+# print(X3)
+# print("2 - 1 =", X - un)
+# print("1 + 1 =", un + un)
+# print("1 * 1 =", un * un)
+# print("2 * 2 =",
+#       X * X)  # 2 * 2 = 3 c'est normal c'est juste une représentation
+# print("3 + 4 =", X2 + X3)
+# print("3 / 2 =", X3 / X2)
+# print()
+############################
+#----------
+#implémentation de la page 22 du poly du premier mail codes correcteurs
+def affiche_poly(u):
+    p = ""
+    for i in range(u.shape[0]):
+        coeff = u[i]
+        if coeff != F256(0):
+            if p != "":
+                p += " + "
+            if i == 0:
+                p += f"{coeff}"
+            else:
+                p += f"{coeff} X^{i}"
+    print(p)
+# X est une racine primitive. X = X^1 = 0b10 = 2
+def encodage_v1(u):
+    k = u.shape[0]
+    a = np.zeros(255, dtype=F256)
+    for i in range(255):
+        c = F256(0)
+        for j in range(k):
+            c += u[j] * table_log[(i * j) % 255]
+        a[i] = c
+    return a
+def encodage_v2(u):
+    pass
+# On teste que numpy sait faire des produits matriciels même dans F256
+matA = np.array([[F256(1), F256(2)], [F256(3), F256(4)]])
+matB = np.array([[F256(5), F256(6)], [F256(7), F256(8)]])
+def id(n):
+    mat = np.full((n, n), F256(0), dtype=F256)
+    for i in range(n):
+        mat[i, i] = F256(1)
+    return mat
+test = np.full((2, 2), F256(0), dtype=F256)
+# print(type(test[1, 0]))
+I2 = np.array([[F256(1), F256(1)], [F256(1), F256(1)]])
+# print(type((matA @ matB)[0, 0]))
+# print(matA @ id(2))  # Yahoo
+# On a améliorer grandement la complexité de cette fonction
+# parce qu'elle prenait beaucoup trop de temps pour des matrices de grande taille
+def algo_du_pivot(mat):
+    cop = mat.copy()
+    n = cop.shape[0]
+    n_pivots_prec = 0
+    inv = id(n)
+    if n != cop.shape[1]:
+        raise Exception("Elle est pas carrée !")
+    for col in range(n):
+        pivot = None
+        # À chaque fois qu'on fait un pivot, on regarde plus que les lignes en dessous
+        for ligne in range(n_pivots_prec, n):
+            pivot = cop[ligne, col]
+            if pivot != F256(0):
+                # On passe à la suite
+                break
+        if pivot is None:
+            # Dans ce cas, la coprice n'est pas inversible
+            return False
+        
+        # On échange les lignes "ligne" et "n_pivots_prec"
+        # Il faut mettre des doubles crochets bien échanger les lignes
+        cop[[ligne]], cop[[n_pivots_prec]] = cop[[n_pivots_prec]], cop[[ligne]]
+        inv[[ligne]], inv[[n_pivots_prec]] = inv[[n_pivots_prec]], inv[[ligne]]
+        # Opération Li <- Li - coeff/pivot Lj
+        #  et Lj <- coeff/pivot Lj
+        for i in range(n):
+            if cop[i, col] != F256(0):
+                if i == n_pivots_prec:
+                    cop[i] /= pivot
+                    inv[i] /= pivot
+                    pivot = F256(1)
+                else:
+                    coeff = cop[i, col] / pivot
+                    cop[i] -= np.multiply(coeff, cop[n_pivots_prec])
+                    inv[i] -= np.multiply(coeff, inv[n_pivots_prec])
+        n_pivots_prec += 1
+    return inv
+from numpy.polynomial import Polynomial
+p = Polynomial([F256(1), F256(3), F256(10)])
+p
+p + Polynomial([F256(1)])
+b = Polynomial([F256(1)])
+p + b
+a = [1, 2, 3]
+a[:2:-1]
+a[:1:-1]
+list(range(10, 0, -1))
+list(range(2, 0, -1))
+a = [0] * 10
+a[0] = 1
+a
+list(range(2, 0, -1))
+import numpy as np
+np.full((2, 1), 0)
+np.array(range(3))
+np.array(range(3)).transpose()
+np.array(range(3)).reshape((3, 1))
+a = [0, 1, 2, 3]
+a[0:2]
+list(np.array(range(3)))
+np.array(range(3)).tolist()
+import PIL
+from PIL import Image
+truc = open("/home/caracole/Pictures/shrek.jpg")
+img = Image.open(truc)
+img = Image.open(truc.read())
+truc.readable()
+truc.read(1)
+truc.read(10)
+truc.read(100)
+truc.read()
+truc.close()
+img = Image.open("/home/caracole/Pictures/shrek.jpg")
+img.getcolors()
+img.getpixel(0, 0)
+img.getpixel((0, 0))
+img.getcolors(maxcolors = 256)
+img = img.convert("RGB")
+img.getcolors()
+img.show()
+img.show()
+img.convert("RGB").getcolors()
+exit()
+from PIL import Image
+Image.open("Pictures/404 wtf.jpg").convert("RGB").getcolors()
+Image.open("Pictures/404 wtf.jpg").convert("RGB").show()
+from PIL import Image
+a = Image.open("Pictures/shrek.jpg")
+a = a.convert("RGB")
+l = a.getcolors(a.size[0] * a.size[1])
+l[0]
+l[:100]
+max_occ = 0
+max_color = None
+for color in l:
+    if color[0] > max_occ:
+        max_color = color[1]
+        
+    
+print(max_color)
+print(max_occ)
+for color in l:
+    if color[0] > max_occ:
+        max_color = color[1]
+        max_occ = color[0]
+        
+    
+print(max_occ)
+print(max_color)
+img.show()
+a.show()
+hex(54)
+hex(255)
+hex(255)[2:]
+def truc(fn, args):
+def truc(fn, args):
+    return fn(args)
+def machin(hello):
+    return 2 * hello
+truc(machin, 2)
+truc(machin, [0])
+def test(oui, non):
+    return oui || non
+def test(oui, non):
+    return oui or non
+truc(test, (True, False))
+def truc(fonction, args):
+    return fonction(*args)
+truc(test, (True, False))
+truc(machin, [0])
+truc(machin, 3))
+truc(machin, 3)
+len([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 254, 254, 254, 254, 254, 254, 192, 192, 192, 116, 116, 116, 118, 118, 118, 255, 255, 255, 248, 248, 248, 160, 160, 160, 62, 62, 62, 54, 54, 54, 254, 254, 254, 252, 252, 252, 157, 157, 157, 55, 55, 55, 50, 50, 50, 252, 252, 252, 254, 254, 254, 151, 151, 151, 53, 53, 53, 50, 50, 50, 255, 255, 255, 255, 255, 255, 147, 147, 147, 54, 54, 54, 49, 49, 49, 252, 252, 252, 252, 252, 252, 141, 141, 141, 58, 58, 58, 53, 53, 53, 255, 255, 255, 254, 254, 254, 135, 135, 135, 54, 54, 54, 47, 47, 47]
+)
+len([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 212, 144, 37, 99, 187, 63, 220, 217, 190, 207, 251, 162, 92, 160, 92, 106, 70, 245, 208, 52, 102, 115, 203, 82, 66, 117, 22, 148, 200, 212, 77, 20, 111, 17, 4, 125, 200, 68, 62, 76, 97, 219, 18, 96, 73, 250, 178, 119, 216, 126, 17, 252, 105, 26, 128, 94, 190, 176, 9])
+len([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 212, 144, 37, 99, 187, 63, 220, 217, 190, 207, 251, 162, 92, 160, 92, 106, 70, 245, 208, 52, 102, 115, 203, 82, 66, 117, 22, 148, 200, 212, 77, 20, 111, 17, 4, 125, 200, 68, 62, 76, 97, 219, 18, 96, 73, 250, 178, 119, 216, 126, 17, 252, 105, 26, 128, 94, 190, 176, 9])
+import numpy as np
+test = np.full((2, 2), 0)
+test
+test.tolist()
+clear
+474 / 2
+237 / 3
+316 / 4
+320 / 8
+320 / 16
+320 / 32
+320 / 64
+16 * 16 * 3
+8 * 4 * 3
+import time
+time.timezone
+import datetime
+datetime.date(2025, 1, 1)
+datetime.datetime(2025, 1, 1, 0, 0, 0)
+import datetime
+import datetime as dt
+a = dt.datetime(2025, 1, 1, 0, 0, 0)
+b = dt.datetime()
+dt.time()
+dt.time() - a
+dt.datetime_CAPI
+dt.datetime_CAPI(à
+)
+dt.datetime_CAPI()
+dt.tzinfo
+dt.tzinfo.fromutc
+dt.tzinfo.fromutc()
+dt.now()
+dt.datetime.now()
+(dt.datetime.now() - a).total_seconds()
+(dt.datetime.now() - a).days
+(dt.datetime.now() - a).month
+(dt.datetime.now() - a).months
+b = (dt.datetime.now() - a)
+b.days
+(dt.datetime.now() - a) / 52
+1660 / 60
+import time
+time.time()
+a = open("/home/caracole/.last")
+b = int(a.read())
+b
+a = open("/home/caracole/.count")
+t = a.read()
+t
+t[:-1]
+a.close()
+b = open("/home/caracole/.count", "w")
+b.write("52")
+b.close()
+a = open("/home/caracole/.count")
+a.read()
+import time
+import datetime as dt
+dt.datetime.now() - time.time()
+dt.datetime.fromtimestamp(time.time())
+int("1\n")
+dt.datetime(2025, 1, 1, 0, 0, 0) < dt.datetime.now()
+dt.datetime.now() + dt.datetime(0, 0, 0, 1)
+dt.datetime.now() + dt.timedelta(0, 0, 0, 0, 0, 1)
+import os
+os.system("notify-send -a 'ouais' -w 'yo' 'salut'")
+os.system("notify-send -a 'ouais' -w 'yo' 'salut'")
+a = (dt.datetime.now() + dt.timedelta(0, 0, 0, 0, 0, 1))
+a.hour
+a.day
+a
+int("1.1\n")
+"1x\n".strip()
+import datetime as dt
+dt.datetime.now()
+n = dt.datetime.now()
+n.ctime()
+n.strftime()
+n.strftime("%a %d %b %Y à %H:%M")
+a = open("/home/caracole/.counter")
+a.close()
+a = open("/home/caracole/.counter", "w")
+a.write(repr([52, 1749246456
+]))
+a.close()
+a = open("/home/caracole/.counter", "w")
+a.write(repr([52, 1749246456]))
+a.close()
+a = open("/home/caracole/.counter")
+data = a.read()
+data
+eval(data)
+a, b, c = [0, 1, 2]
+a
+b
+c
+clear
+import datetime as dt
+n = dt.datetime.now()
+n.hour
+n = dt.datetime.now() - dt.timedelta(0, 0, 0, 0, 0, 3)
+n.hour
+import time
+time.time()
+3 * 8 * 4
+3 * 8 * 4
+255 - 96
+3 * 8 * 8
+255 - 192
+3 * 16 * 16
+3 * 8 * 8
+3 * 8 * 8
+192 + 2 * 31
+3 * 8 * 8*
+3 * 8 * 8
+3 * 8 * 8 + 20
+3 * 8 * 8
+20 * 12 * 3
+import main
+import main
+a = main.F256(0b11)
+b = main.F256(0b100)
+a
+b
+a * b
+main.table_exp[3]
+main.table_exp[4]
+main.table_log[101]
+a = main.F256(0b10)
+a * b
+a
+b 
+import main
+a = main.F256(0b111)
+b = main.F256(0b101)
+a
+b
+a * b
+b = main.F256(0b11)
+b
+a * b
+main.table_exp[7]
+main.table_exp[3]
+b = main.F256(0b10)
+b
+main.table_exp
+main.table_log
+0b1010
+a = main.F256(0b1010)
+b = main.F256(0b1000)
+a
+b
+a * b
+b = main.F256(0b111)
+b
+a * b
+main.table_log[10]
+main.table_log[7]
+149 + 128
+277 % 255
+main.table_exp[22]
+main.table_log[22]
+main.exp
+main.table_exp
+for i in main.table_exp:
+    if i <= 10:
+        print(i, main.table_exp[i])
+        
+    
+0b101
+0b1010
+0b111
+a = main.F256(0b101)
+b = main.F256(0b111)
+a * b
+198 + 106
+304 % 255
+main.table_log[49]
+a = main.F256(0b1100000)
+a
+b = main.F256(0b110)
+b
+a * b
+b = main.F256(0b10)
+b
+a * b
+a = main.F256(0b1110000)
+a 
+a * b
+a = main.F256(0b1001000)
+a
+a 
+a * b
+b = main.F256(0b11)
+b
+a * b
+b = main.F256(0b111)
+a * b
+b
+b = main.F256(0b11)
+b = main.F256(0b111)
+a = main.F256(0b100100)
+a
+a * b
+b
+36 * 7
+a = main.F256(0b110100)
+a
+a = main.F256(0b110000)
+a
+48 * 7
+a = main.F256(0b110000)
+b = main.F256(0b111)
+a
+b
+a * b
+b = main.F256(0b100)
+b
+a * b
+b = main.F256(0b1000)
+b
+a * b
+a = main.F256(0b100000)
+a
+a * b
+a = main.F256(0b110000)
+a = main.F256(0b100000)
+b = main.F256(0b1001)
+a * b
+b
+a 
+main.table_exp[9]
+main.table_exp
+for i in range(16):
+    print(i, main.table_exp[i])
+    
+for i in range(1, 16):
+    print(i, main.table_exp[i])
+    
+main.table_exp[0b100001]
+a 
+0b100001
+a = main.F256(0b100001)
+a
+b = main.F256(0b1001)
+b
+a * b
+main.table_exp[33]
+main.table_exp[9]
+87 + 205
+292 % 255
+main.table_log[37]
+3 * 8 * 8
+7497105550516842596726617568141903372594654293104986611358148366984030285
+3 * 5 * 6
+5 * 5 * 3
+3 * 4 * 4
+3 * 4 * 10
+3 * 4 * 12
+3 * 4 * 16
+256 - 192
+3 * 5 * 6
+180 / 12
+15 * 12
+256 - 180
+180 / 8
+256 - 3 * 5 * 10
+import numpy as np
+a = np.array(
+    [ 1, 2, 3],
+    [ 4, 5, 6],
+    [ 7, 8, 9]
+)
+a = np.array([
+    [ 1, 2, 3],
+    [ 4, 5, 6],
+    [ 7, 8, 9]
+])
+a[:2, :]
+a
+a[:, :2]
+a[:, :2] = 0
+a
+180 / 12
+3 * 6 * 12
+[1, 2, 3, 4, 5][-3:]
+a = {"a": 0}
+b = a
+b["a"] = 1
+a
+b = a.copy()
+b
+b["a"] = 3
+b
+[0, 1].pop(0)
+a = {
+    { "a" : 0},
+]
+a = {
+    { "a" : 0},
+    { "a" : 0},
+    { "a" : 0}
+}
+a = {
+    { "a" : 0} : 0
+}
+import main
+main.poss(main.INIT)
+main
+import jeu
+jeu.poss(jeu.INIT))
+jeu.poss(jeu.INIT)
+list(jeu.poss(jeu.INIT))
+jeu.est_correct(jeu.INIT)
+jeu.est_correct(jeu.INIT)
+import jeu
+jeu.est_correct(jeu.INIT)
+import jeu
+jeu.est_correct(jeu.INIT)
+import jeu
+jeu.est_correct(jeu.INIT)
+import jeu
+a = ("a", "b", "c")
+a = ([], "b")
+b = a
+b[0].append("hello")
+b
+a
+b = ( x for x in a )
+import jeu
+(91 + 74 + 89) / 3
+(82 + 70 + 93) / 3
+0b110000111 ^ 2**8
+bin(135)
+0b110000111 ^ (2**8)
+a = 1 if False else 2
+a
+print(input())
+a = input()
+a
+a = input()
+a
+import numpy as np
+a = np.array([[1, 2], [3, 4]])
+a[0:1]
+a[0:1, :]
+a = np.array([
+    [ 1, 2, 3],
+    [ 4, 5, 6],
+    [ 7, 8, 9])
+a = np.array([
+    [ 1, 2, 3],
+    [ 4, 5, 6],
+    [ 7, 8, 9]])
+    
+a
+a[0:1, :]
+a[:, 0:2]
+a.shape
+a[:, 0:2].shape
+180 * 3
+540 / 8
+540 % 80
+540 % 81
+300 / 99
+300 % 99
+300 % 98
+900 % 98
+180 / 80
+180 % 80
+180 % 81
+900 % 88
+900 % 78
+900 % 75
+900 % 76
+900 % 74
+3 * 74 + 10
+3 * 74 + 20
+import numpy as np
+a = np.array(range(10))
+a
+a.shape
+a + [10, 11]
+np.concat(a, [10, 11])
+np.concat(a, 10, 11)
+np.concat((a, [10, 11]))
+a
+a[:100]
+a.shape
+a = np.array([[1, 2], [3, 4]])
+a = np.array([[1], [2])
+a = np.array([[1], [2]])
+a.searchsorted
+a.shape
+433.33 - 178 + 234
+433.33 - 550 + 234
+import main
+import main
+def prod(P, Q):
+    n1, n2 = len(P), len(Q)
+    PQ = [0] * (n1 + n2 - 1)
+    for k in range(n1):
+        Pk = P[k]
+        for i in range(n):
+        Pk = P[k]
+        for i in range(n2):
+            Pk = P[k]
+        for i in range(n2):
+            PQ[k+i] += Pk * Q[i]
+    return PQ
+prod([1, 0], [1])
+prod([1, 0], [1, 0])
+prod([1, 0], [3, 1])
+prod([1, 1], [3, 1])
+11 * 31
+prod([1, 1], [20, 1])
+base
+def base(chiffres, base_i, base_f):
+    nombre = 0
+    for puissance in range(len(chiffres)):
+    n = len(chiffres)
+    nombre = °
+    nombre = 0
+    for puissance in range(n):
+        nombre += chiffres[n-puis-1] * (base_i**puis)
+    for puis in range(n):
+        nombre += chiffres[n-puis-1] * (base_i**puis)
+    chiffres_f = []
+    while nombre != 0:
+        chiffres_f.append(nombre % 2)
+        nombre //= 2
+    return chiffres_f[::-1]
+base([1, 1, 0], 10, 11)
+        chiffres_f.append(nombre % base_f)
+        nombre //= base_f
+    return chiffres_f[::-1]
+    
+base([1, 1, 0], 10, 11)
+import main
+import main
+import random
+P = [ F256(random.randint(0, 255)) for i in range(random.randint(1, 10)) ]
+P = [ main.F256(random.randint(0, 255)) for i in range(random.randint(1, 10)) ]
+Q = [ main.F256(random.randint(0, 255)) for i in range(random.randint(1, 10)) ]
+P
+Q
+prod(P, Q)
+main.prod(P, Q)
+import main
+import random
+P = [ main.F256(random.randint(0, 255)) for i in range(random.randint(1, 10)) ]
+Q = [ main.F256(random.randint(0, 255)) for i in range(random.randint(1, 10)) ]
+main.prod(P, Q)
+main.prod2(P, Q)
+P
+Q
+import main
+P = [ main.F256(random.randint(0, 255)) for i in range(random.randint(1, 10)) ]
+import random
+P = [ main.F256(random.randint(0, 255)) for i in range(random.randint(1, 10)) ]
+Q = [ main.F256(random.randint(0, 255)) for i in range(random.randint(1, 10)) ]
+P
+Q
+main.div_euclid(P, Q)
+P
+P = [ main.F256(random.randint(0, 255)) for i in range(20) ]
+Q = [ main.F256(random.randint(0, 255)) for i in range(20) ]
+P
+Q
+Q = [ main.F256(random.randint(0, 255)) for i in range(4) ]
+Q
+main.div_euclid(P, Q)
+P = [ main.F256(random.randint(0, 255)) for i in range(100) ]
+main.div_euclid(P, Q)
+Q = [ main.F256(random.randint(0, 255)) for i in range(12) ]
+ma
+Q = [ main.F256(random.randint(0, 255)) for i in range(12) ]
+main.div_euclid(P, Q)
+15 * 15
+import pandas
+import pandas
+tableau = pandas.read_excel("/home/caracole/H4/TIPE/résultats.ods")
+tableau = pandas.read_excel("/home/caracole/H4/TIPE/résultats.ods")
+tableau.Bruit
+clear
+tableau
+max(1, 2)
+import pandas
+tableau = pandas.read_excel("/home/caracole/H4/TIPE/excel/entree.xlsx")
+tableau = pandas.read_excel("/home/caracole/H4/TIPE/excel/entree.xlsx")
+for row in tableau.iterrows()[:10]:
+    print(row)
+    
+n = 0
+for row in tableau.iterrows():
+    n += 1
+    if n == 10:
+        break
+    print(row)
+    
+row
+row.bruit
+row
+import pandas
+tableau = pandas.read_excel("/home/caracole/H4/TIPE/excel/entree.xlsx")
+for row in tableau.itertuples():
+    print(row)
+    
+for row in tableau.itertuples():
+    print(row.bruit)
+    
+import pandas
+tableau = pandas.read_excel("/home/caracole/H4/TIPE/excel/entree.xlsx")
+for i, row in tableau.iterrows():
+import pandas
+tableau = pandas.read_excel("/home/caracole/H4/TIPE/excel/entree.xlsx")
+for i, row in tableau.iterrows():
+import pandas
+tableau = pandas.read_excel("/home/caracole/H4/TIPE/excel/entree.xlsx")
+for i, row in tableau.iterrows():
+import pandas
+tableau = pandas.read_excel("/home/caracole/H4/TIPE/excel/test.xlsx")
+for i, row in tableau.iterrows():
+    tableau.at[i, "bruit"] = 0
+    
+tableau
+tableau
+tableau.to_excel("/home/caracole/H4/TIPE/excel/test.xlsx")
+import pandas
+tableau.to_excel("/home/caracole/H4/TIPE/excel/test.xlsx")
+tableau = pandas.read_excel("/home/caracole/H4/TIPE/excel/test.xlsx")
+for i, row in tableau.iterrows():
+tableau.name
+for i, row in tableau.iterrows():
+    row[1].bruit
+    
+for i, row in tableau.iterrows():
+    row.bruit
+    
+import pandas
+a = pandas.read_excel("/home/caracole/H4/TIPE/excel/test.xlsx")
+b = a.iterrows()[0:2]
+for i, row in tableau.iterrows():
+    if i <= 10:
+        print(i, row)
+for i, row in a.iterrows():
+    if i <= 10:
+        print(i, row)
+        
+    
+i
+type(i)
+import pandas
+a = pandas.read_excel("/home/caracole/H4/TIPE/excel/test.xlsx")
+a.shape
+a.at[58, "bruit"] = 0.2
+a.to_excel("/home/caracole/H4/TIPE/excel/sortie.xlsx")
+a.at[58, "bruit"] = 0.3
+a.to_excel("/home/caracole/H4/TIPE/excel/sortie.xlsx")
+a.shape
+type(a)
+b = pandas.DataFrame(columns=a.columns)
+b
+a
+clear
+a[1]
+a[3]
+a.iloc[0]
+a.iloc[0].t
+a.iloc[0]
+a.iloc[0] = {"name": "bounty"}
+a
+b
+b.empty
+import os
+os.system("notify-send -a 'ouais' -w 'yo' 'salut'")
+import os
+os.system("notify-send -a 'ouais' -w 'yo' 'salut' &")
+import pandas
+sortie = pandas.read_excel("/home/caracole/H4/TIPE/excel/sortie.xlsx")
+sortie.shape[0]
+import pandas
+pandas.read_excel("doihf")
+def test():
+    print("oui", end="")
+import time
+def t():
+    print("oui", end="")
+    time.sleep(2)
+    print(" non")
+    
+t()
+    print(" non", flush=True)
+    
+t()
+"\cr\lf"
+def t():
+    print("oui", end="")
+    time.sleep(2)
+    print("\rnon")
+    
+t()
+import os
+os.terminal_size()
+os.popen("stty size", "r").read().split()
+os.popen("stty size", "r").read().split()[0]
+from multiprocessing import Manager
+manager = Manager()
+print("hello")
+from multiprocessing import Manager, Process
+def multiprocess():
+    manager = Manager()
+    truc = manager.list([None] * n_process)
+    for i in range(4):
+a = [None] * 4
+a
+a[0] = 1
+a
+    for i in range(4):
+    process = [None] * 4
+    truc = manager.list([None] * 4)
+    for i in range(4):
+        process[i] = Process(target=print, args=(i,))
+        process[i].start()
+    for j in range(4):
+        process[i].join()
+multiprocess()
+multiprocess()
+def worker(num):
+    print(f"Worker: {num}")
+if __name__ == "__main__"":
+if __name__ == "__main__""
+if __name__ == "__main__":
+    process = Process(target=worker, args=(1,))
+    process.start()
+    process.join()
+    

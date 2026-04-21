@@ -1,0 +1,7 @@
+[Desktop Entry]
+Type=Application
+Name=Syncthing
+GenericName=Synchronisaton
+Exec=syncthing
+Icon=/usr/share/icons/Papirus/64x64/apps/syncthing-gtk.svg
+Terminal=false

@@ -1,0 +1,7 @@
+[Desktop Entry]
+Type=Application
+Name=btm
+GenericName=Bottom
+Exec=btm
+Icon=/usr/share/icons/Papirus/64x64/apps/htop.svg
+Terminal=true

@@ -1,0 +1,8 @@
+[Desktop Entry]
+Type=Application
+Name=Google Earth Pro
+GenericName=3D planet viewer
+Comment=Explore, search and discover the planet
+Exec=/home/caracole/Code/google_earth.fish
+Icon=/usr/share/icons/Papirus/64x64/apps/google-earth-pro.svg
+Terminal=false

@@ -1,0 +1,463 @@
+#################
+# NOUVELLE IA ! #
+#################
+
+import math
+import sys
+import random
+import ast
+
+#############
+# STRATEGIE #
+#############
+
+# Au début on farm à mort, puis après il y a 2 héros qui vont en attaque.
+# En attaque, ils font 100% du CONTROL et du SHIELD
+# Le CONTROL pour orienter les spiders qui sont pas dangereuses
+
+
+base = input().split()
+base_coords = {"x": int(base[0]), "y": int(base[1])}
+# Les coords de la base ennemie
+ennemis_base_coords = {"x": 17630 - int(base[0]), "y": 9000 - int(base[1])}
+
+# Les coordonnées des points de farm (pour couvrir un max de zone avec 3 héros)
+defense_add = [[7921, 2122], [5798, 5798], [2122, 7921]] # C'est les coordonnées à partir de 0, 0
+defense_pos = []
+# Les coordonnées d'attaque
+attack_add = [[5540, 2300], [2300, 5540]]
+attack_pos = []
+# Les coordonnées de défense en phase 3
+phase3_def_add = [[5543, 2296], [2296, 5543]]
+phase3_def_pos = []
+# Les coordonnées d'attaque en phase 3
+phase3_att_add = [[4936, 797], [4746, 1574], [4434, 2311], [4008, 2989], \
+                  [2863, 4099], [2173, 4503], [1427, 4792], [644, 4958]]
+phase3_att_pos = []
+attack_count = 0 # Pour tourner en rond
+
+# On les adapte en fonction de l'emplacement de la base
+for add in defense_add:
+    defense_pos.append([abs(base_coords["x"] - add[0]), abs(base_coords["y"] - add[1])])
+for add in attack_add:
+    attack_pos.append([abs(ennemis_base_coords["x"] - add[0]), abs(ennemis_base_coords["y"] - add[1])])
+for add in phase3_def_add:
+    phase3_def_pos.append([abs(base_coords["x"] - add[0]), abs(base_coords["y"] - add[1])])
+for add in phase3_att_add:
+    phase3_att_pos.append([abs(ennemis_base_coords["x"] - add[0]), abs(ennemis_base_coords["y"] - add[1])])
+
+# On double les positions d'attaque pour revenir en arrière
+# Copie superficielle pour que .reverse n'ait pas d'effets sur l'original
+phase2_att_reverse = ast.literal_eval(repr(phase3_att_pos))
+phase2_att_reverse.reverse()
+phase3_att_pos += phase2_att_reverse
+
+
+# Le nombre d'héro par joueur -> toujours 3 donc on s'en fout
+input()
+
+# Une fonction pour calculer la distance entre deux coordonnées sur la carte
+def distance(coords1, coords2):
+    return math.sqrt((coords1["x"] - coords2["x"]) ** 2 + (coords1["y"] - coords2["y"]) ** 2)
+
+# Une fonction pour récupérer une entité avec son id
+def get(liste, id):
+    for i in liste:
+        if i["id"] == id:
+            return i
+            break
+
+controlled = [] # La liste des monsres qu'on a CONTROL
+sent = []
+phase = 1
+tours = 0
+kamehameha = False
+
+# Boucle principale
+while True:
+
+
+    ############################
+    # ENREGISTREMENT DES INFOS #
+    ############################
+
+    info = input().split()
+    base_life = int(info[0])
+    mana = int(info[1])
+    # Si on a plus de 180 de mana on enclenche la phase 2
+    if mana >= 180 and phase == 1:
+        phase = 2
+    # Une fois qu'on a envoyé 8 monstres, on passe à la phase 3
+    elif len(sent) >= 8 and phase == 2:
+        phase = 3
+    # On se fout des infos d'en face
+    input()
+    entity_count = int(input())
+    monsters = []
+    heros = []
+    ennemis = []
+
+    for entity in range(entity_count):
+
+        data = input().split()
+
+        if data[1] == "0": # Si c'est un monstre, on l'enregistre dans les monstres
+            x = int(data[2])
+            y = int(data[3])
+            monster_data = {
+                "id": int(data[0]),
+                "coords": {"x": x, "y": y}, # Sa position actuelle
+                "SHIELD": bool(int(data[4])), # S'il a un SHIELD
+                "CONTROL": bool(int(data[5])), # S'il est sous CONTROL
+                "hp": int(data[6]),
+                "move": {"x": int(data[7]), "y": int(data[8])}, # Les coords de son vecteur vitesse
+                "next_coords": {"x": x + int(data[7]), "y": y + int(data[8])}, # Ses coords le tour suivant
+                "attacking": bool(int(data[9])),
+                "dangerous": int(data[10]),
+            }
+            monster_data["dist_base"] = distance(monster_data["coords"], base_coords)
+            monsters.append(monster_data)
+
+
+        elif data[1] == "1": # Si c'est un de mes héros, on le mets dans la liste
+            heros.append({
+                "id": int(data[0]),
+                "coords": {"x": int(data[2]), "y": int(data[3])}, # Sa position actuelle
+                "SHIELD": bool(int(data[4])), # S'il a un SHIELD
+                "CONTROL": bool(int(data[5])) # S'il est sous CONTROL
+            })
+            heros[-1]["dist_base"] = distance(heros[-1]["coords"], base_coords)
+
+        else: # Si c'est un héro ennemi
+            ennemis.append({
+                "id": int(data[0]),
+                "coords": {"x": int(data[2]), "y": int(data[3])}, # Sa position actuelle
+                "SHIELD": bool(int(data[4])), # S'il a un SHIELD
+                "CONTROL": bool(int(data[5])) # S'il est sous CONTROL
+            })
+            ennemis[-1]["dist_base"] = distance(ennemis[-1]["coords"], base_coords)
+
+
+    ###############
+    # CLASSEMENTS #
+    ###############
+
+    # Classement des monstres par distance avec la base
+    sorted_monsters = []
+    for monster1 in monsters:
+        # On prend pas en compte les monstres à plus de 9897 de la base (en phase 1)
+        # En phase 2, c'est 8000
+        if phase == 1:
+            limite = 9897
+        elif phase == 2:
+            limite = 100000 # Plus de limite
+        elif phase == 3:
+            limite = 8000
+        if monster1["dist_base"] <= limite:
+            n = 0
+            last = True
+            for monster2 in sorted_monsters:
+                # On le mets avant celui qui est plus loin que lui
+                if monster1["dist_base"] < monster2["dist_base"]:
+                    sorted_monsters.insert(n, monster1)
+                    last = False
+                    break
+                n += 1
+            # S'il est moins dangereux que tous, on le met à la fin
+            # Ça va aussi se déclencher si la liste est vide
+            if last:
+                sorted_monsters.append(monster1)
+    
+    # On classe les monstres en fonction de leur distance avec les héros
+    closest_monsters = [[], [], []]
+    for hero_index in range(3):
+        hero = heros[hero_index]
+        for monster1 in monsters:
+            if monster1["dist_base"] <= 9897:
+                n = 0
+                last = True
+                for monster2 in closest_monsters[hero_index]:
+                    if distance(monster1["coords"], hero["coords"]) < distance(monster2["coords"], hero["coords"]):
+                        closest_monsters[hero_index].insert(n, monster1)
+                        last = False
+                        break
+                if last:
+                    closest_monsters.append(monster1)
+
+    # Classement des monstres par distance avec la base ennemie
+    sorted_ennemis_monsters = []
+    for monster1 in monsters:
+        # On prend seulement en compte les monstres à plus de 9897 de ma base
+        if monster1["dist_base"] >= 9897:
+            n = 0
+            last = True
+            for monster2 in sorted_ennemis_monsters:
+                # On le mets avant celui qui est plus loin que lui
+                if distance(monster1["coords"], ennemis_base_coords) < distance(monster2["coords"], ennemis_base_coords):
+                    sorted_ennemis_monsters.insert(n, monster1)
+                    last = False
+                    break
+                n += 1
+            # S'il est moins dangereux que tous, on le met à la fin
+            # Ça va aussi se déclencher si la liste est vide
+            if last:
+                sorted_ennemis_monsters.append(monster1)
+
+    ##########
+    # ACTION #
+    ##########
+
+    output = ["WAIT", "WAIT", "WAIT"]
+
+    ###########
+    # PHASE 1 #
+    ###########
+
+    if phase == 1:
+
+        tmp_heros = ast.literal_eval(repr(heros)) # Une copie superficielle pour ne pas faire de lien
+        for monster in sorted_monsters[:3]:
+
+            # On calcul le héro le plus proche du monstre
+            closest_hero = tmp_heros[0] # De base, c'est lui (faut bien en choisir un)
+            # On tri en fonction de la distance avec le monstre
+            for hero in tmp_heros:
+                if distance(hero["coords"], monster["coords"]) < distance(closest_hero["coords"], monster["coords"]):
+                    closest_hero = hero
+            hero_index = heros.index(closest_hero)
+            tmp_hero_index = tmp_heros.index(closest_hero)
+            # On enlève le héro qui devient occupé comme ça les autres bossent aussi
+            tmp_heros.pop(tmp_hero_index)
+
+            # Si le monstre est à moins de 3800 de la base, qu'il y a suffisament de mana,
+            # qu'il n'y a pas de SHIELD et qu'il ne meurt pas au prochain tour (sauf s'il est vraiment très proche),
+            # le héro à porté contre-attaque.
+            # La distance diminue plus la partie avance
+            if monster["dist_base"] <= 4000 - tours * 7 and mana >= 10 and not monster["SHIELD"] \
+                    and (monster["hp"] > 2 or monster["dist_base"] <= 400) and \
+                    distance(closest_hero["coords"], monster["coords"]) <= 1280:
+                
+                diff_x = closest_hero["coords"]["x"] - base_coords["x"]
+                diff_y = closest_hero["coords"]["y"] - base_coords["y"]
+                eject_x = abs(base_coords["x"] - abs(diff_x) * 2)
+                eject_y = abs(base_coords["y"] - abs(diff_y) * 2)
+                output[hero_index] = f"SPELL WIND {eject_x} {eject_y} Get out !"
+                mana -= 10
+
+            # Sinon, on l'attaque normalement ou on se rapproche
+            else:
+                output[hero_index] = f"MOVE {monster['coords']['x']} {monster['coords']['y']}"
+
+        hero_count = 0
+        for out in output:
+            # Tous ceux qui n'ont pas de monstres à taper, vont en position défensive
+            if out == "WAIT":
+                print(f"MOVE {defense_pos[hero_count][0]} {defense_pos[hero_count][1]}")
+            else:
+                print(out)
+            hero_count += 1
+    
+    ###########
+    # PHASE 2 #
+    ###########
+
+    if phase == 2:
+
+        tmp_heros = ast.literal_eval(repr(heros)) # Une copie superficielle pour ne pas faire de lien
+        for monster in sorted_monsters[:3]:
+
+            # On calcul le héro le plus proche du monstre
+            closest_hero = tmp_heros[0] # De base, c'est lui (faut bien en choisir un)
+            # On tri en fonction de la distance avec le monstre
+            for hero in tmp_heros:
+                if distance(hero["coords"], monster["coords"]) < distance(closest_hero["coords"], monster["coords"]):
+                    closest_hero = hero
+            hero_index = heros.index(closest_hero)
+            tmp_hero_index = tmp_heros.index(closest_hero)
+            # On enlève le héro qui devient occupé comme ça les autres bossent aussi
+            tmp_heros.pop(tmp_hero_index)
+        
+            # Si le monstre est à moins de 3800 de la base, qu'il y a suffisament de mana,
+            # qu'il n'y a pas de SHIELD et qu'il ne meurt pas au prochain tour (sauf s'il est vraiment très proche),
+            # le héro à porté contre-attaque.
+            # La distance diminue plus la partie avance
+            if monster["dist_base"] <= 4000 - tours * 7:
+
+                # S'il est suffisamment proche pour un WIND, il le fait:
+                if distance(closest_hero["coords"], monster["coords"]) <= 1280 and mana >= 10 and not monster["SHIELD"] and (monster["hp"] > 2 or monster["dist_base"] <= 400):
+                    output[hero_index] = f"SPELL WIND {ennemis_base_coords['x']} {ennemis_base_coords['y']} Get out !"
+                    mana -= 10
+
+                # Sinon, on se rapproche/on l'attaque normalement
+                else:
+                    output[hero_index] = f"MOVE {monster['coords']['x']} {monster['coords']['y']}"
+
+            # Sinon, on CONTROL le monstre s'il est à porté
+            elif distance(monster["coords"], heros[hero_index]["coords"]) <= 2200 and not monster["SHIELD"] \
+                    and monster["id"] not in controlled and monster["dist_base"] >= 5000:
+
+                output[hero_index] = f"SPELL CONTROL {monster['id']} {ennemis_base_coords['x']} {ennemis_base_coords['y']}"
+                mana -= 10
+                # On le compte seulement s'il a 10 vies ou plus
+                if monster["hp"] >= 10:
+                    sent.append(monster["id"])
+                # On l'ajoute quand même à la liste des controllés
+                controlled.append(monster["id"])
+
+            # Sinon on se rapproche
+            elif monster["id"] not in controlled:
+                output[hero_index] = f"MOVE {monster['coords']['x']} {monster['coords']['y']}"
+
+        hero_count = 0
+        for out in output:
+            # Tous ceux qui n'ont pas de monstres à taper, vont en position défensive
+            if out == "WAIT":
+                print(f"MOVE {defense_pos[hero_count][0]} {defense_pos[hero_count][1]}")
+            else:
+                print(out)
+            hero_count += 1
+
+
+    ###########
+    # PHASE 3 #
+    ###########
+
+    if phase == 3:
+
+        # On choisit le héro de défense et les deux d'attaque
+        attack_index = 0
+        for hero in heros:
+            if hero["dist_base"] > heros[attack_index]["dist_base"]:
+                attack_index = heros.index(hero)
+
+        index_list = [0, 1, 2]
+        defense_index = [index_list[attack_index - 1], index_list[attack_index - 2]]
+
+
+        ##################
+        # HEROS DEFENSIFS #
+        ##################
+
+        # S'il y a au moins un monstre :
+        if sorted_monsters:
+
+            monster = sorted_monsters[0]
+
+            # Calcul du héro le plus proche
+            if distance(heros[defense_index[0]]["coords"], monster["coords"]) < distance(heros[defense_index[1]]["coords"], monster["coords"]):
+                hero_index = defense_index[0]
+                other_index = defense_index[1]
+            else:
+                hero_index = defense_index[1]
+                other_index = defense_index[0]
+            closest_hero = heros[hero_index]
+
+            # Si le monstre est à moins de 1500 de la base, qu'il y a suffisament de mana,
+            # qu'il n'y a pas de SHIELD, qu'il ne meurt pas au prochain tour (sauf s'il est vraiment très proche),
+            # et qu'un héro est suffisamment proche, il contre-attaque.
+            # La distance diminue plus la partie avance
+            if monster["dist_base"] <= 1500 and mana >= 10 and not monster["SHIELD"] \
+                    and (monster["hp"] > 2 or monster["dist_base"] <= 400) \
+                    and distance(closest_hero["coords"], monster["coords"]) <= 1280:
+
+                diff_x = closest_hero["coords"]["x"] - base_coords["x"]
+                diff_y = closest_hero["coords"]["y"] - base_coords["y"]
+                eject_x = abs(base_coords["x"] - abs(diff_x) * 2)
+                eject_y = abs(base_coords["y"] - abs(diff_y) * 2)
+                output[hero_index] = f"SPELL WIND {eject_x} {eject_y} Get out !"
+                if len(sorted_monsters) == 1:
+                    # L'autre héro va là où va être éjecté le monstre s'il n'y en a qu'un seul
+                    output[other_index] = f"MOVE {monster['coords']['x'] + diff_x} {monster['coords']['y'] + diff_y}"
+                mana -= 10
+
+            else: # Sinon, on l'attaque normalement
+                output[hero_index] = f"MOVE {monster['coords']['x']} {monster['coords']['y']}"
+                # L'autre héro l'attaque aussi s'il n'y en a qu'un seul ou s'il est à moins de 4000
+                # ou s'il a du SHIELD
+                if len(sorted_monsters) == 1 or monster["dist_base"] <= 4000 or monster["SHIELD"]:
+                    output[other_index] = f"MOVE {monster['coords']['x'] + 10} {monster['coords']['y'] + 10}"
+            
+            # S'il y a un monstre après le plus proche, le deuxième héro s'occupe du suivant
+            # (s'il est pas déjà occupé)
+            if len(sorted_monsters) > 1 and output[other_index] == "WAIT":
+
+                monster2 = sorted_monsters[1]
+
+                # Si le monstre est à moins de 3800 de la base, qu'il y a suffisament de mana,
+                # qu'il n'y a pas de SHIELD, qu'il ne meurt pas au prochain tour (sauf s'il est vraiment très proche),
+                # et qu'un héro est suffisamment proche, il contre-attaque.
+                # La distance diminue plus la partie avance
+                if monster2["dist_base"] <= 2500 and mana >= 10 and not monster2["SHIELD"] \
+                        and (monster2["hp"] > 2 or monster2["dist_base"] <= 400) and \
+                        distance(heros[other_index]["coords"], monster2["coords"]) <= 1280:
+
+                    diff_x = heros[other_index]["coords"]["x"] - base_coords["x"]
+                    diff_y = heros[other_index]["coords"]["y"] - base_coords["y"]
+                    eject_x = abs(base_coords["x"] - abs(diff_x) * 2)
+                    eject_y = abs(base_coords["y"] - abs(diff_y) * 2)
+                    output[other_index] = f"SPELL WIND {eject_x} {eject_y} Get out !"
+                    mana -= 10
+                
+                else: # Sinon, on l'attaque normalement
+                    output[other_index] = f"MOVE {monster2['coords']['x'] + 10} {monster2['coords']['y'] + 10}"
+        
+        # S'il n'y a aucun monstre, on reprend les positions de défense
+        else:
+            output[defense_index[0]] = f"MOVE {phase3_def_pos[0][0]} {phase3_def_pos[0][1]}"
+            output[defense_index[1]] = f"MOVE {phase3_def_pos[1][0]} {phase3_def_pos[1][1]}"
+
+
+        ####################
+        # HEROS ATTAQUANTS #
+        ####################
+
+        # On copie le boss
+        # Quoiqu'il en soit, après un kamehameha, on avance vers la base
+        if kamehameha != kamehameha:
+            pass
+        #    output[attack_index] = f"MOVE {ennemis_base_coords['x']} {ennemis_base_coords['y']}"
+        #    kamehameha = False
+        else:
+            # Si on voit un monstre à moins de 6500, on le WIND et on le SHIELD
+            if sorted_ennemis_monsters:
+                monster = sorted_ennemis_monsters[0]
+                if distance(monster["coords"], ennemis_base_coords) <= 5500:
+                    
+                    # Sinon, on le SHIELD dans le cas où il est proche de la base adverse
+                    if 1680 < distance(monster["coords"], heros[attack_index]["coords"]) <= 2200 and \
+                            mana >= 10 and not monster["SHIELD"] and \
+                            distance(monster["coords"], ennemis_base_coords) <= 2500:
+
+                        output[attack_index] = f"SPELL SHIELD {monster['id']} Hé hé"
+                        mana -= 10
+
+                    # Si on peut, on le WIND
+                    elif distance(monster["coords"], heros[attack_index]["coords"]) <= 1280 and \
+                            mana >= 10 and not monster["SHIELD"]:
+
+                        # On détermine le vecteur pour qu'il aille dans le direction de la base
+                        # Ça va déterminer un parallélogramme de vecteurs comme en cours de maths
+                        x = heros[attack_index]["coords"]["x"] - monster["coords"]["x"] + ennemis_base_coords["x"]
+                        y = heros[attack_index]["coords"]["y"] - monster["coords"]["y"] + ennemis_base_coords["y"]
+                        output[attack_index] = f"SPELL WIND {x} {y} Kamehameha"
+                        kamehameha = True
+                        mana -= 10
+
+                    # Sinon, on se rapproche (s'il n'a pas de SHIELD et si on a suffisament de mana)
+                    elif mana >= 10 and not monster["SHIELD"]:
+                        output[attack_index] = f"MOVE {monster['next_coords']['x']} {monster['next_coords']['y']}"
+            
+            # Sinon, on avance vers le prochain point d'attaque (il y en a 16 en tout)
+            if output[attack_index] == "WAIT":
+                
+                next_pos = phase3_att_pos[attack_count % 16]
+                output[attack_index] = f"MOVE {next_pos[0]} {next_pos[1]}"
+                # Tant qu'on est pas à moins de 6500 de la base ennemie, on n'avance pas à la suivante
+                # Ce qui permet d'arriver "en bas" au début de la phase 3
+                if distance(heros[attack_index]["coords"], ennemis_base_coords) <= 6500:
+                    attack_count += 1
+
+        for out in output:
+            print(out)
+
+    tours += 1

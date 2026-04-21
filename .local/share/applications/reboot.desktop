@@ -1,0 +1,7 @@
+[Desktop Entry]
+Type=Application
+Name=Redémarrer
+GenericName=Reboot
+Exec=reboot
+Icon=/usr/share/icons/Papirus/64x64/apps/system-reboot.svg
+Terminal=false
