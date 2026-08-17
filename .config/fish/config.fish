@@ -12,6 +12,8 @@ if status is-interactive
     abbr --add tree ls --tree
     abbr --add rmd rm -rf
     abbr --add mandel QT_QPA_PLATFORM=xcb ~/Downloads/Mandelbulber_v2-2.31-1-x86_64.AppImage
+
+    abbr --add twitch 'chatterino & streamlink --player mpv --twitch-disable-ads --twitch-low-latency twitch.tv/ohnepixel best'
     bind . _puffer_fish_expand_dots
     # Set up fzf key bindings
     fzf --fish | source

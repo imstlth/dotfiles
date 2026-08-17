@@ -1,0 +1,8 @@
+[Desktop Entry]
+Type=Application
+Name=Resilio Sync
+GenericName=Sync
+Comment=Synchronise ton PC et ton tél
+Exec=/home/caracole/Code/sync.fish
+Icon=/usr/share/icons/Papirus/64x64/apps/freefilesync.svg
+Terminal=false
